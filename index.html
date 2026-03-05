@@ -1,0 +1,1628 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Таро — Нити Судьбы</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Cinzel:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --deep: #0d0a1a;
+    --purple: #1a1030;
+    --violet: #2a1850;
+    --gold: #c9a84c;
+    --gold-light: #f0d080;
+    --gold-dim: #7a6030;
+    --text: #e8d8b0;
+    --text-dim: #9080a0;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--deep);
+    color: var(--text);
+    font-family: 'Cormorant Garamond', serif;
+    overflow: hidden;
+  }
+
+  /* ─── STARS BACKGROUND ─── */
+  #stars-canvas {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  }
+
+  /* ─── SCREENS ─── */
+  .screen {
+    position: fixed; inset: 0; z-index: 10;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.8s ease;
+  }
+  .screen.active { opacity: 1; pointer-events: all; }
+
+  /* ─── SCREEN 1: INPUT ─── */
+  #screen-input {
+    gap: 2rem;
+  }
+  .title-main {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    color: var(--gold-light);
+    letter-spacing: 0.15em;
+    text-align: center;
+    text-shadow: 0 0 40px rgba(201,168,76,0.5);
+  }
+  .subtitle {
+    font-size: 1.1rem;
+    color: var(--text-dim);
+    font-style: italic;
+    letter-spacing: 0.05em;
+    text-align: center;
+  }
+  .input-group {
+    display: flex; flex-direction: column; gap: 1.2rem;
+    width: min(400px, 90vw);
+  }
+  .input-group label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    color: var(--gold);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .input-group input {
+    background: rgba(42, 24, 80, 0.5);
+    border: 1px solid var(--gold-dim);
+    border-radius: 4px;
+    padding: 0.8rem 1.2rem;
+    color: var(--text);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    width: 100%;
+  }
+  .input-group input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 20px rgba(201,168,76,0.2);
+  }
+  .input-group input::placeholder { color: var(--text-dim); }
+  .btn-gold {
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold-light);
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.25em;
+    padding: 0.9rem 2.5rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-gold::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, transparent 30%, rgba(201,168,76,0.1) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: transform 0.5s;
+  }
+  .btn-gold:hover::before { transform: translateX(100%); }
+  .btn-gold:hover {
+    background: rgba(201,168,76,0.1);
+    box-shadow: 0 0 30px rgba(201,168,76,0.3);
+  }
+
+  /* ─── SCREEN 2: ORB ─── */
+  #screen-orb {
+    gap: 2.5rem;
+  }
+  .orb-container {
+    position: relative;
+    width: 220px; height: 220px;
+  }
+  /* Outer glow rings */
+  .orb-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(201,168,76,0.15);
+    animation: ring-pulse 3s ease-in-out infinite;
+  }
+  .orb-ring:nth-child(1) { inset: -30px; animation-delay: 0s; }
+  .orb-ring:nth-child(2) { inset: -55px; animation-delay: 0.7s; border-color: rgba(201,168,76,0.08); }
+  .orb-ring:nth-child(3) { inset: -80px; animation-delay: 1.4s; border-color: rgba(201,168,76,0.04); }
+  @keyframes ring-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.5; }
+  }
+
+  /* The orb itself */
+  .orb {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%,
+      #f0d080 0%,
+      #c9a84c 20%,
+      #7a4f1a 45%,
+      #3d1f0a 65%,
+      #1a0d20 85%,
+      #0d0a1a 100%
+    );
+    box-shadow:
+      0 0 60px rgba(201,168,76,0.4),
+      0 0 120px rgba(201,168,76,0.15),
+      inset 0 0 40px rgba(0,0,0,0.6);
+    animation: orb-breathe 4s ease-in-out infinite, orb-rotate 12s linear infinite;
+  }
+  @keyframes orb-breathe {
+    0%, 100% { box-shadow: 0 0 60px rgba(201,168,76,0.4), 0 0 120px rgba(201,168,76,0.15), inset 0 0 40px rgba(0,0,0,0.6); }
+    50% { box-shadow: 0 0 90px rgba(201,168,76,0.6), 0 0 180px rgba(201,168,76,0.25), 0 0 300px rgba(140,80,200,0.1), inset 0 0 40px rgba(0,0,0,0.6); }
+  }
+  @keyframes orb-rotate {
+    from { filter: hue-rotate(0deg) brightness(1); }
+    50% { filter: hue-rotate(15deg) brightness(1.1); }
+    to { filter: hue-rotate(0deg) brightness(1); }
+  }
+
+  /* Orb shimmer overlay */
+  .orb-shimmer {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at 30% 25%, rgba(255,255,220,0.35) 0%, transparent 50%);
+    animation: shimmer-move 6s ease-in-out infinite;
+  }
+  @keyframes shimmer-move {
+    0%, 100% { transform: translate(0,0) scale(1); opacity: 0.8; }
+    33% { transform: translate(5px,-3px) scale(1.05); opacity: 1; }
+    66% { transform: translate(-3px,4px) scale(0.95); opacity: 0.6; }
+  }
+
+  /* Floating particles around orb */
+  .orb-particles {
+    position: absolute; inset: -60px;
+    border-radius: 50%;
+    animation: particles-orbit 20s linear infinite;
+  }
+  .particle {
+    position: absolute;
+    width: 3px; height: 3px;
+    background: var(--gold);
+    border-radius: 50%;
+    box-shadow: 0 0 6px var(--gold);
+  }
+  @keyframes particles-orbit {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .orb-text {
+    font-size: 1.15rem;
+    font-style: italic;
+    color: var(--text-dim);
+    text-align: center;
+    letter-spacing: 0.05em;
+    max-width: 380px;
+    animation: text-fade 2s ease-in-out infinite alternate;
+  }
+  @keyframes text-fade {
+    from { opacity: 0.6; }
+    to { opacity: 1; }
+  }
+
+  /* ─── SCREEN 3: CARDS ─── */
+  #screen-cards {
+    gap: 2rem;
+  }
+  .oracle-phrase {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(0.75rem, 1.5vw, 0.95rem);
+    color: var(--gold);
+    letter-spacing: 0.15em;
+    text-align: center;
+    font-style: italic;
+    max-width: 600px;
+    padding: 0 1rem;
+  }
+  .cards-row {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 0 1rem;
+  }
+  .card-slot {
+    width: clamp(80px, 12vw, 110px);
+    aspect-ratio: 2/3.5;
+    cursor: pointer;
+    perspective: 1000px;
+  }
+  .card-inner {
+    width: 100%; height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    border-radius: 8px;
+  }
+  .card-slot.flipped .card-inner { transform: rotateY(180deg); }
+
+  .card-face, .card-back {
+    position: absolute; inset: 0;
+    border-radius: 8px;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  /* Card back */
+  .card-back {
+    background: #12092a;
+    border: 1.5px solid var(--gold-dim);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.7), inset 0 0 30px rgba(80,20,120,0.3);
+  }
+  .card-back svg { width: 100%; height: 100%; }
+  .card-slot:not(.flipped):hover .card-back {
+    border-color: var(--gold);
+    box-shadow: 0 0 30px rgba(201,168,76,0.4), inset 0 0 30px rgba(80,20,120,0.3);
+  }
+  .card-slot:not(.flipped) { animation: card-hover-float 3s ease-in-out infinite; }
+  .card-slot:nth-child(2):not(.flipped) { animation-delay: 0.4s; }
+  .card-slot:nth-child(3):not(.flipped) { animation-delay: 0.8s; }
+  .card-slot:nth-child(4):not(.flipped) { animation-delay: 1.2s; }
+  .card-slot:nth-child(5):not(.flipped) { animation-delay: 1.6s; }
+  @keyframes card-hover-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  /* Card face */
+  .card-face {
+    transform: rotateY(180deg);
+    background: linear-gradient(175deg, #1a0d38 0%, #0e0820 50%, #180830 100%);
+    border: 1.5px solid var(--gold);
+    display: flex; flex-direction: column; align-items: center;
+    box-shadow: 0 0 40px rgba(201,168,76,0.3), inset 0 0 30px rgba(60,0,100,0.4);
+    overflow: hidden;
+    padding: 0;
+  }
+  .card-face svg { width: 100%; flex: 1; }
+  .card-face-name {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(0.42rem, 0.8vw, 0.58rem);
+    color: var(--gold);
+    text-align: center;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border-top: 1px solid rgba(201,168,76,0.4);
+    padding: 0.25rem 0.3rem 0.3rem;
+    width: 100%;
+    background: rgba(0,0,0,0.3);
+  }
+  .card-position-label {
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    text-align: center;
+    margin-top: 0.4rem;
+    font-style: italic;
+    letter-spacing: 0.05em;
+    font-family: 'Cormorant Garamond', serif;
+  }
+
+  /* ─── SCREEN 4: READING ─── */
+  #screen-reading {
+    overflow-y: auto;
+    padding: 3rem 1rem;
+    justify-content: flex-start;
+    gap: 0;
+  }
+  .reading-container {
+    max-width: 680px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .reading-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+  .reading-title {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.2rem, 3vw, 1.8rem);
+    color: var(--gold-light);
+    letter-spacing: 0.2em;
+    margin-bottom: 0.5rem;
+  }
+  .reading-date-info {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+  .card-reading {
+    border-left: 1px solid var(--gold-dim);
+    padding: 1.5rem 0 1.5rem 1.5rem;
+    margin-bottom: 0.5rem;
+    opacity: 0;
+    transform: translateX(-20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .card-reading.visible { opacity: 1; transform: translateX(0); }
+  .card-reading-header {
+    display: flex; align-items: center; gap: 0.8rem;
+    margin-bottom: 0.8rem;
+  }
+  .card-reading-symbol { font-size: 1.4rem; }
+  .card-reading-meta { display: flex; flex-direction: column; gap: 0.1rem; }
+  .card-reading-position {
+    font-size: 0.7rem;
+    color: var(--gold-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-family: 'Cinzel', serif;
+  }
+  .card-reading-name {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    color: var(--gold);
+  }
+  .card-reading-text {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--text);
+    font-style: italic;
+  }
+  .divider {
+    width: 60px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+    margin: 1.5rem auto;
+  }
+  .final-message {
+    text-align: center;
+    padding: 2rem;
+    background: rgba(42,24,80,0.3);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 4px;
+    margin-top: 1rem;
+  }
+  .final-message p {
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+  .btn-restart {
+    margin-top: 2rem;
+    display: block;
+    width: fit-content;
+    margin-left: auto; margin-right: auto;
+  }
+
+  /* Scrollbar */
+  #screen-reading::-webkit-scrollbar { width: 4px; }
+  #screen-reading::-webkit-scrollbar-track { background: transparent; }
+  #screen-reading::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
+
+  @keyframes blink {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 0; }
+  }
+  .oracle-typing {
+    font-style: italic;
+    color: var(--text-dim);
+    font-size: 0.95rem;
+  }
+  .dots {
+    display: inline-block;
+    animation: dotpulse 1.4s infinite;
+    letter-spacing: 0.1em;
+  }
+  @keyframes dotpulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  /* ─── MODALS ─── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(5,2,15,0.85);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.5s ease;
+    padding: 1rem;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal-box {
+    background: linear-gradient(160deg, #1a0d38 0%, #0e0820 100%);
+    border: 1px solid var(--gold-dim);
+    border-radius: 12px;
+    max-width: 480px; width: 100%;
+    padding: 2.5rem 2rem;
+    position: relative;
+    box-shadow: 0 0 80px rgba(100,30,180,0.3), 0 0 30px rgba(201,168,76,0.15);
+    text-align: center;
+    animation: modal-rise 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes modal-rise {
+    from { transform: translateY(40px) scale(0.95); opacity: 0; }
+    to   { transform: translateY(0) scale(1); opacity: 1; }
+  }
+
+  /* Limit modal */
+  .modal-orb-icon {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    display: block;
+    filter: grayscale(0.4) drop-shadow(0 0 16px rgba(201,168,76,0.4));
+    animation: orb-sad 3s ease-in-out infinite;
+  }
+  @keyframes orb-sad {
+    0%,100% { transform: translateY(0); filter: grayscale(0.4) drop-shadow(0 0 16px rgba(201,168,76,0.4)); }
+    50% { transform: translateY(-5px); filter: grayscale(0.2) drop-shadow(0 0 24px rgba(201,168,76,0.6)); }
+  }
+  .modal-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.2rem;
+    color: var(--gold-light);
+    letter-spacing: 0.15em;
+    margin-bottom: 0.6rem;
+  }
+  .modal-subtitle {
+    font-size: 1rem;
+    color: var(--text-dim);
+    font-style: italic;
+    line-height: 1.6;
+    margin-bottom: 1.8rem;
+  }
+  .modal-countdown {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    color: var(--gold-dim);
+    letter-spacing: 0.1em;
+    margin-bottom: 1.5rem;
+  }
+  .modal-btn-row {
+    display: flex; flex-direction: column; gap: 0.8rem;
+  }
+  .btn-premium {
+    background: linear-gradient(135deg, #7a4f10 0%, #c9a84c 50%, #7a4f10 100%);
+    background-size: 200% auto;
+    border: none;
+    border-radius: 6px;
+    color: #0d0a1a;
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    padding: 1rem 2rem;
+    cursor: pointer;
+    transition: background-position 0.4s, box-shadow 0.3s;
+    box-shadow: 0 4px 20px rgba(201,168,76,0.3);
+    animation: gold-shimmer 3s linear infinite;
+  }
+  @keyframes gold-shimmer {
+    0%   { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+  .btn-premium:hover { box-shadow: 0 4px 30px rgba(201,168,76,0.6); }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid rgba(201,168,76,0.25);
+    color: var(--text-dim);
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    padding: 0.7rem 1.5rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: border-color 0.3s, color 0.3s;
+  }
+  .btn-ghost:hover { border-color: var(--gold-dim); color: var(--text); }
+
+  /* ─── PREMIUM MODAL ─── */
+  .premium-modal { max-width: 560px; padding: 2rem 1.8rem; }
+  .premium-header {
+    display: flex; flex-direction: column; align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  .premium-crown { font-size: 2.5rem; margin-bottom: 0.5rem; }
+  .premium-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.3rem;
+    color: var(--gold-light);
+    letter-spacing: 0.2em;
+    margin-bottom: 0.3rem;
+  }
+  .premium-tagline {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  .plans-row {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 0.8rem; margin-bottom: 1.5rem;
+  }
+  .plan-card {
+    border: 1px solid var(--gold-dim);
+    border-radius: 8px;
+    padding: 1.2rem 1rem;
+    cursor: pointer;
+    transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+    position: relative;
+    background: rgba(42,24,80,0.2);
+  }
+  .plan-card:hover, .plan-card.selected {
+    border-color: var(--gold);
+    box-shadow: 0 0 20px rgba(201,168,76,0.2);
+    background: rgba(42,24,80,0.5);
+  }
+  .plan-badge {
+    position: absolute; top: -10px; left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(90deg, #7a4f10, #c9a84c, #7a4f10);
+    color: #0d0a1a;
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 0.15rem 0.6rem;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .plan-period {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+  .plan-price {
+    font-size: 1.6rem;
+    color: var(--text);
+    font-weight: 300;
+    margin-bottom: 0.2rem;
+  }
+  .plan-price span { font-size: 0.9rem; color: var(--text-dim); }
+  .plan-save { font-size: 0.75rem; color: #7ec87e; font-style: italic; }
+
+  .features-list {
+    list-style: none;
+    margin-bottom: 1.5rem;
+    text-align: left;
+  }
+  .features-list li {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    padding: 0.35rem 0;
+    display: flex; align-items: flex-start; gap: 0.6rem;
+    border-bottom: 1px solid rgba(201,168,76,0.08);
+  }
+  .features-list li:last-child { border: none; }
+  .feat-icon { color: var(--gold); font-size: 0.85rem; flex-shrink: 0; margin-top: 0.05rem; }
+  .feat-premium-tag {
+    font-size: 0.6rem;
+    background: rgba(201,168,76,0.15);
+    color: var(--gold);
+    border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 3px;
+    padding: 0.05rem 0.3rem;
+    letter-spacing: 0.05em;
+    font-family: 'Cinzel', serif;
+    margin-left: auto; flex-shrink: 0;
+  }
+  .modal-close {
+    position: absolute; top: 1rem; right: 1rem;
+    background: none; border: none;
+    color: var(--text-dim); font-size: 1.2rem;
+    cursor: pointer; line-height: 1;
+    transition: color 0.2s;
+  }
+  .modal-close:hover { color: var(--text); }
+  .guarantee-text {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    font-style: italic;
+    margin-top: 0.8rem;
+    opacity: 0.7;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="stars-canvas"></canvas>
+
+<!-- SCREEN 1: INPUT -->
+<div class="screen active" id="screen-input">
+  <div class="title-main">НИТИ СУДЬБЫ</div>
+  <div class="subtitle">Таро откроет то, что скрыто за завесой времени</div>
+  <div class="input-group">
+    <label>Ваше имя</label>
+    <input type="text" id="inp-name" placeholder="Как вас зовут..." autocomplete="off">
+    <label>Дата рождения</label>
+    <input type="date" id="inp-birth">
+    <label>Ваш вопрос (необязательно)</label>
+    <input type="text" id="inp-question" placeholder="О чём вы хотите узнать..." autocomplete="off">
+  </div>
+  <button class="btn-gold" onclick="startReading()">ОТКРЫТЬ ВРАТА</button>
+</div>
+
+<!-- SCREEN 2: ORB -->
+<div class="screen" id="screen-orb">
+  <div class="orb-container">
+    <div class="orb-ring"></div>
+    <div class="orb-ring"></div>
+    <div class="orb-ring"></div>
+    <div class="orb">
+      <div class="orb-shimmer"></div>
+    </div>
+    <div class="orb-particles" id="orb-particles"></div>
+  </div>
+  <div class="orb-text" id="orb-text">Нити судьбы сплетаются в узор...</div>
+</div>
+
+<!-- SCREEN 3: CARDS -->
+<div class="screen" id="screen-cards">
+  <div class="oracle-phrase" id="oracle-phrase"></div>
+  <div class="cards-row" id="cards-row"></div>
+  <div class="card-position-label" id="flip-hint">Нажмите на карту, чтобы открыть её</div>
+  <button class="btn-gold" id="btn-reveal" style="opacity:0;pointer-events:none;margin-top:1rem" onclick="showReading()">ПРОЧЕСТЬ ПРЕДСКАЗАНИЕ</button>
+</div>
+
+<!-- SCREEN 4: READING -->
+<div class="screen" id="screen-reading">
+  <div class="reading-container" id="reading-container"></div>
+</div>
+
+<!-- MODAL: LIMIT REACHED -->
+<div class="modal-overlay" id="modal-limit">
+  <div class="modal-box">
+    <span class="modal-orb-icon">🔮</span>
+    <div class="modal-title">ЛИМИТ НА СЕГОДНЯ ИСЧЕРПАН</div>
+    <div class="modal-subtitle">
+      Оракул устал читать нити судьбы... Бесплатно доступно 2 гадания в день.<br>
+      Откройте безлимитный доступ и узнайте всё, что скрыто.
+    </div>
+    <div class="modal-countdown" id="limit-countdown">Следующее бесплатное гадание через: 00:00:00</div>
+    <div class="modal-btn-row">
+      <button class="btn-premium" onclick="openPremium()">✦ ОТКРЫТЬ ПРЕМИУМ ДОСТУП ✦</button>
+      <button class="btn-ghost" onclick="closeLimitModal()">Вернуться назад</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PREMIUM -->
+<div class="modal-overlay" id="modal-premium">
+  <div class="modal-box premium-modal">
+    <button class="modal-close" onclick="closePremium()">✕</button>
+    <div class="premium-header">
+      <div class="premium-crown">♛</div>
+      <div class="premium-title">НИТИ СУДЬБЫ — PREMIUM</div>
+      <div class="premium-tagline">Полное раскрытие тайн вашего пути</div>
+    </div>
+
+    <div class="plans-row">
+      <div class="plan-card" id="plan-month" onclick="selectPlan('month')">
+        <div class="plan-period">Месяц</div>
+        <div class="plan-price">490₽<span>/мес</span></div>
+        <div class="plan-save" style="opacity:0">—</div>
+      </div>
+      <div class="plan-card selected" id="plan-year" onclick="selectPlan('year')">
+        <div class="plan-badge">ВЫГОДНЕЕ</div>
+        <div class="plan-period">Год</div>
+        <div class="plan-price">290₽<span>/мес</span></div>
+        <div class="plan-save">Экономия 2400₽</div>
+      </div>
+    </div>
+
+    <ul class="features-list">
+      <li>
+        <span class="feat-icon">♾</span>
+        <span>Безлимитные гадания на Таро каждый день</span>
+      </li>
+      <li>
+        <span class="feat-icon">✦</span>
+        <span>Глубокий разбор вопроса с развёрнутыми толкованиями</span>
+      </li>
+      <li>
+        <span class="feat-icon">◎</span>
+        <span><strong style="color:var(--text)">Матрица судьбы</strong> — полный нумерологический расчёт по дате рождения: 22 позиции энергий, личный код судьбы, таланты, кармические задачи</span>
+        <span class="feat-premium-tag">PREMIUM</span>
+      </li>
+      <li>
+        <span class="feat-icon">☽</span>
+        <span>Лунный календарь — персональный прогноз на каждый день</span>
+        <span class="feat-premium-tag">PREMIUM</span>
+      </li>
+      <li>
+        <span class="feat-icon">★</span>
+        <span>Совместимость по картам Таро и матрице судьбы</span>
+        <span class="feat-premium-tag">PREMIUM</span>
+      </li>
+      <li>
+        <span class="feat-icon">⚡</span>
+        <span>История всех ваших гаданий — всегда под рукой</span>
+      </li>
+    </ul>
+
+    <button class="btn-premium" style="width:100%;font-size:0.9rem;padding:1.1rem" onclick="handleSubscribe()">
+      НАЧАТЬ БЕСПЛАТНЫЙ ПЕРИОД 7 ДНЕЙ
+    </button>
+    <div class="guarantee-text">Отмена в любой момент · Без скрытых списаний · Безопасная оплата</div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// STARS
+// ═══════════════════════════════════════════
+const canvas = document.getElementById('stars-canvas');
+const ctx = canvas.getContext('2d');
+let stars = [];
+
+function initStars() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  stars = Array.from({length: 180}, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 1.2 + 0.2,
+    a: Math.random(),
+    speed: Math.random() * 0.003 + 0.001,
+    phase: Math.random() * Math.PI * 2
+  }));
+}
+
+function drawStars(t) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  stars.forEach(s => {
+    s.a = 0.3 + 0.5 * Math.sin(t * s.speed + s.phase);
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(220,200,150,${s.a})`;
+    ctx.fill();
+  });
+  requestAnimationFrame(drawStars);
+}
+
+initStars();
+window.addEventListener('resize', initStars);
+requestAnimationFrame(drawStars);
+
+// ═══════════════════════════════════════════
+// ORB PARTICLES
+// ═══════════════════════════════════════════
+function createOrbParticles() {
+  const container = document.getElementById('orb-particles');
+  const count = 8;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const angle = (i / count) * 360;
+    const r = 50 + Math.random() * 20;
+    p.style.left = `calc(50% + ${Math.cos(angle * Math.PI/180) * r}px)`;
+    p.style.top = `calc(50% + ${Math.sin(angle * Math.PI/180) * r}px)`;
+    p.style.opacity = 0.4 + Math.random() * 0.6;
+    container.appendChild(p);
+  }
+}
+createOrbParticles();
+
+// ═══════════════════════════════════════════
+// TAROT DATA
+// ═══════════════════════════════════════════
+const MAJOR_ARCANA = [
+  { id: 0,  name: "Шут",           symbol: "🃏", element: "Воздух" },
+  { id: 1,  name: "Маг",           symbol: "✦",  element: "Огонь" },
+  { id: 2,  name: "Жрица",         symbol: "🌙", element: "Вода" },
+  { id: 3,  name: "Императрица",   symbol: "♀",  element: "Земля" },
+  { id: 4,  name: "Император",     symbol: "♂",  element: "Огонь" },
+  { id: 5,  name: "Иерофант",      symbol: "☩",  element: "Земля" },
+  { id: 6,  name: "Влюблённые",    symbol: "♡",  element: "Воздух" },
+  { id: 7,  name: "Колесница",     symbol: "⚔",  element: "Вода" },
+  { id: 8,  name: "Сила",          symbol: "∞",  element: "Огонь" },
+  { id: 9,  name: "Отшельник",     symbol: "🕯", element: "Земля" },
+  { id: 10, name: "Колесо Фортуны",symbol: "⊕",  element: "Огонь" },
+  { id: 11, name: "Справедливость",symbol: "⚖",  element: "Воздух" },
+  { id: 12, name: "Повешенный",    symbol: "⧖",  element: "Вода" },
+  { id: 13, name: "Смерть",        symbol: "☽",  element: "Вода" },
+  { id: 14, name: "Умеренность",   symbol: "⊞",  element: "Огонь" },
+  { id: 15, name: "Дьявол",        symbol: "⛓",  element: "Земля" },
+  { id: 16, name: "Башня",         symbol: "⚡",  element: "Огонь" },
+  { id: 17, name: "Звезда",        symbol: "★",  element: "Воздух" },
+  { id: 18, name: "Луна",          symbol: "☾",  element: "Вода" },
+  { id: 19, name: "Солнце",        symbol: "☀",  element: "Огонь" },
+  { id: 20, name: "Суд",           symbol: "🔔", element: "Огонь" },
+  { id: 21, name: "Мир",           symbol: "◎",  element: "Земля" },
+];
+
+const POSITIONS = [
+  { key: "past",    label: "Прошлое",    hint: "То, что сформировало вас" },
+  { key: "present", label: "Настоящее",  hint: "Ваша нынешняя энергия" },
+  { key: "hidden",  label: "Скрытое",    hint: "Что скрыто от глаз" },
+  { key: "advice",  label: "Совет",      hint: "Послание высших сил" },
+  { key: "outcome", label: "Исход",      hint: "Куда ведут нити судьбы" },
+];
+
+// Birth-date based card interpretations
+const BIRTH_ARCANA = {
+  past: {
+    0:  "Шут в прошлом говорит о душе, которая пришла в этот мир открытой — без страха и предубеждений. Ваш путь начинался с чистого листа, и это даровало вам редкую свободу.",
+    1:  "Маг в прошлом: вы уже в детстве ощущали в себе силу преобразования. Ваше прошлое наполнено моментами, когда воля превращала замыслы в реальность.",
+    2:  "Жрица хранит тайны вашего прошлого. За вашим молчанием скрывается глубина, которую мало кто мог увидеть — вы знали больше, чем говорили.",
+    3:  "Императрица в прошлом: вас окружала творческая, питающая энергия. Ваши корни уходят в плодородную почву любви и созидания.",
+    4:  "Император говорит о прошлом, где вам рано пришлось взять ответственность — за себя или за других. Порядок был вашей защитой.",
+    5:  "Иерофант в прошлом: традиции и наставники сыграли важную роль в вашем становлении. Вы усвоили уроки, которые теперь стали частью вас.",
+    6:  "Влюблённые в прошлом говорят о выборах, которые изменили всё. Ваши прошлые привязанности сформировали систему ценностей, по которой вы живёте сейчас.",
+    7:  "Колесница в прошлом: вы сражались и побеждали. Ваш дух закалился через препятствия, которые другие сочли бы непреодолимыми.",
+    8:  "Сила в прошлом: внутри вас давно живёт укрощённый лев. Прошлое научило вас мягкой власти — той, что сильнее любого принуждения.",
+    9:  "Отшельник в прошлом: вы рано поняли цену одиночества. Эти периоды уединения подарили вам мудрость, недоступную суетливым умам.",
+    10: "Колесо Фортуны в прошлом говорит о жизни, полной поворотов судьбы. Каждый цикл подготавливал вас к следующему.",
+    11: "Справедливость в прошлом: вы пришли в мир с обострённым чувством правды. Несправедливость всегда отзывалась в вас болью.",
+    12: "Повешенный в прошлом: были периоды вынужденного ожидания, когда казалось, что жизнь застыла. Но именно тогда созревало нечто важное.",
+    13: "Смерть в прошлом не несёт зла — она говорит о великих трансформациях. Вы уже переживали полное обновление, когда старая жизнь уходила, открывая путь новой.",
+    14: "Умеренность в прошлом: вы учились находить баланс между крайностями. Этот опыт смешивания противоположностей стал вашим главным даром.",
+    15: "Дьявол в прошлом говорит о цепях, которые вы уже надевали на себя — привязанности, страхи, иллюзии. Но вы видите их теперь.",
+    16: "Башня в прошлом: что-то было разрушено до основания — и это оказалось освобождением. Молния очистила то, что не могло стоять вечно.",
+    17: "Звезда в прошлом: даже в тёмные времена в вас жила надежда. Этот свет никогда не гас полностью.",
+    18: "Луна в прошлом говорит о детстве, полном интуитивных ощущений — снов, предчувствий, теней. Ваш внутренний мир всегда был богаче видимого.",
+    19: "Солнце в прошлом: вы несли радость в мир уже с первых лет жизни. Ваше прошлое освещено теплом, которое питало окружающих.",
+    20: "Суд в прошлом говорит о пробуждении — когда вы услышали зов и поняли своё предназначение. Этот момент изменил всё.",
+    21: "Мир в прошлом: вы завершили важный цикл и стоите на пороге нового. Прошлое — это не груз, а достигнутая вершина.",
+  },
+  present: {
+    0:  "Шут говорит: вы стоите на краю — перед вами открытое пространство нового начала. Доверьтесь потоку.",
+    1:  "Маг сейчас: все инструменты в ваших руках. Вопрос не в том, можете ли вы — а в том, направите ли вы волю.",
+    2:  "Жрица сейчас: прислушайтесь к тишине внутри. Ответ уже есть — он ждёт, когда вы замолчите достаточно долго.",
+    3:  "Императрица сейчас: время расцвета и созидания. Питайте то, что растёт, — в себе и вокруг.",
+    4:  "Император сейчас: вам нужна структура. Установите правила — сначала для себя.",
+    5:  "Иерофант сейчас говорит о поиске смысла и принадлежности. Ищите мудрость в традиции, но не в слепом следовании.",
+    6:  "Влюблённые сейчас: перед вами выбор, который определит многое. Следуйте сердцу, но не закрывайте разум.",
+    7:  "Колесница сейчас: движение вперёд, несмотря на сопротивление. Держите поводья обеими руками.",
+    8:  "Сила сейчас: ваша настоящая сила — не в напоре, а в терпеливой уверенности. Вы справитесь.",
+    9:  "Отшельник сейчас: возможно, пришло время отойти от шума и найти свой свет внутри.",
+    10: "Колесо Фортуны сейчас: что-то меняется. Оседлайте волну — не цепляйтесь за берег.",
+    11: "Справедливость сейчас говорит: взвесьте всё честно. Решение, которое вы принимаете, вернётся к вам.",
+    12: "Повешенный сейчас: не борьбу время, а наблюдения. Видение меняется, когда смотришь иначе.",
+    13: "Смерть сейчас не пугает — она освобождает. Отпустите то, что уже умерло.",
+    14: "Умеренность сейчас: не торопитесь. Истинное золото получается медленным смешением.",
+    15: "Дьявол сейчас: что держит вас? Назовите это — и половина власти над вами исчезнет.",
+    16: "Башня сейчас: что-то рушится — или должно рухнуть. Не стойте в обломках.",
+    17: "Звезда сейчас: после бури приходит тишина и надежда. Вы на пути исцеления.",
+    18: "Луна сейчас говорит: не всё то, что вы видите — реально. Различайте страх и интуицию.",
+    19: "Солнце сейчас: ваш момент сияния. Позвольте себе быть увиденным.",
+    20: "Суд сейчас: пришло время честно посмотреть на себя и принять зов.",
+    21: "Мир сейчас: вы достигли завершения. Насладитесь этим, прежде чем начинать следующее.",
+  },
+  hidden: {
+    0:  "Скрытая сила Шута в вас — это способность начинать заново в любой момент. Многие боятся этого; вы — можете.",
+    1:  "Скрытый Маг говорит: внутри вас больше силы и таланта, чем вы признаёте. Вы преуменьшаете себя.",
+    2:  "Скрытая Жрица хранит знание, к которому вы ещё не осмелились прикоснуться. Оно ждёт в глубине.",
+    3:  "Скрытая Императрица: глубоко внутри вы желаете создавать и любить без условий. Позвольте этому выйти.",
+    4:  "Скрытый Император говорит о подавленной потребности в контроле и порядке. Признайте её.",
+    5:  "Скрытый Иерофант: вы ищете более глубокого смысла, чем тот, что видите вокруг.",
+    6:  "Скрытые Влюблённые: есть выбор или чувство, которое вы не решаетесь признать даже себе.",
+    7:  "Скрытая Колесница: в вас дремлет воин — целеустремлённый и непреклонный. Разбудите его.",
+    8:  "Скрытая Сила говорит: вы сильнее, чем думаете. Перестаньте искать разрешения проявиться.",
+    9:  "Скрытый Отшельник: часть вас мечтает об уединении и тишине. Это не слабость.",
+    10: "Скрытое Колесо: вы чувствуете, что перемены уже начались — хотя внешне ещё не заметны.",
+    11: "Скрытая Справедливость: есть ситуация, где вы уже знаете правильный ответ. Признайте его.",
+    12: "Скрытый Повешенный говорит о принятии, к которому вы ещё сопротивляетесь.",
+    13: "Скрытая Смерть: есть что-то, что вы держите живым лишь из привычки. Пора отпустить.",
+    14: "Скрытая Умеренность: внутри вас живёт алхимик — тот, кто умеет соединять несовместимое.",
+    15: "Скрытый Дьявол: будьте честны о том, что вас притягивает — даже если это неудобно.",
+    16: "Скрытая Башня: вы уже чувствуете трещины в той структуре, что считали надёжной.",
+    17: "Скрытая Звезда: за всем скептицизмом живёт нежная надежда. Берегите её.",
+    18: "Скрытая Луна: ваша интуиция говорит вам нечто важное. Вы слышите, но не слушаете.",
+    19: "Скрытое Солнце: вы несёте в себе больше радости, чем позволяете себе выражать.",
+    20: "Скрытый Суд: где-то глубоко вы уже знаете ответ на свой главный вопрос.",
+    21: "Скрытый Мир говорит о завершении, которое уже произошло — вы просто ещё не дали себе это признать.",
+  },
+  advice: {
+    0:  "Совет Шута: сделайте шаг в неизвестность. Безопасность — это иллюзия. Ваш прыжок будет подхвачен.",
+    1:  "Совет Мага: сфокусируйте намерение. Рассеянная воля не творит — она лишь желает. Выберите одно.",
+    2:  "Совет Жрицы: не ищите ответа во внешнем. Войдите в тишину и спросите себя.",
+    3:  "Совет Императрицы: питайте себя. Творчество, красота, природа — это не роскошь, это ваше топливо.",
+    4:  "Совет Императора: создайте систему. Дисциплина сейчас — это свобода завтра.",
+    5:  "Совет Иерофанта: ищите мудрость у тех, кто прошёл ваш путь раньше. Не изобретайте колесо.",
+    6:  "Совет Влюблённых: следуйте ценностям, а не страху. Выбор, сделанный из любви, никогда не бывает ошибкой.",
+    7:  "Совет Колесницы: двигайтесь. Победа приходит к тем, кто в пути, а не к тем, кто ждёт удобного момента.",
+    8:  "Совет Силы: будьте мягки. Жёсткость ломается — гибкость выстоит. Ваша нежность — это сила.",
+    9:  "Совет Отшельника: найдите время для одиночества и раздумий. Ответ придёт в тишине.",
+    10: "Совет Колеса: примите цикличность жизни. Сопротивление переменам забирает больше сил, чем сами перемены.",
+    11: "Совет Справедливости: примите решение — и примите его последствия. Откладывание — это тоже выбор.",
+    12: "Совет Повешенного: попробуйте увидеть ситуацию с другой точки зрения. То, что кажется тупиком, может быть дверью.",
+    13: "Совет Смерти: не бойтесь завершений. За каждым концом стоит начало, которое ждёт пространства.",
+    14: "Совет Умеренности: не торопите процесс. Всё происходит в своё время. Доверьтесь ритму.",
+    15: "Совет Дьявола: осознайте свои привязанности. Только то, что названо, может быть изменено.",
+    16: "Совет Башни: примите необходимые разрушения. То, что рушится, не было вашим — оно освобождает место.",
+    17: "Совет Звезды: надейтесь. Не наивно, а сознательно — как акт воли и веры в жизнь.",
+    18: "Совет Луны: доверяйте интуиции больше, чем страхам. Они похожи, но ведут в разные стороны.",
+    19: "Совет Солнца: позвольте себе радоваться. Счастье — не награда, а выбор.",
+    20: "Совет Суда: ответьте на зов, который давно слышите, но откладываете. Время пришло.",
+    21: "Совет Мира: признайте завершённость пути. Вы можете двигаться дальше, не отвергая то, что было.",
+  },
+  outcome: {
+    0:  "Исход — Шут: вас ждёт новое начало, которое откроется только тем, кто решится шагнуть.",
+    1:  "Исход — Маг: ваши намерения обретут форму. То, что вы создаёте сейчас, станет реальным.",
+    2:  "Исход — Жрица: ответы придут не через действие, а через созерцание. Тайна раскроется в тишине.",
+    3:  "Исход — Императрица: процветание и рост. Ваши усилия дадут плоды, которые будут питать вас долго.",
+    4:  "Исход — Император: стабильность и структура. Вы создадите надёжную основу для следующего этапа.",
+    5:  "Исход — Иерофант: обретение традиции, сообщества или духовного пути, который даст смысл.",
+    6:  "Исход — Влюблённые: важный союз или выбор, который откроет новое измерение жизни.",
+    7:  "Исход — Колесница: победа через целеустремлённость. Вы достигнете того, к чему стремились.",
+    8:  "Исход — Сила: вы обретёте внутреннюю мощь, которую не нужно доказывать никому.",
+    9:  "Исход — Отшельник: мудрость, обретённая в уединении. Понимание, которое станет вашим фонарём.",
+    10: "Исход — Колесо Фортуны: перемены придут — и они будут в вашу пользу, если вы открыты.",
+    11: "Исход — Справедливость: всё расставится по местам. Истина выйдет на свет.",
+    12: "Исход — Повешенный: принятие откроет новое видение. Чего вы боялись — окажется даром.",
+    13: "Исход — Смерть: трансформация завершится. Вы станете другим человеком — и это именно то, что нужно.",
+    14: "Исход — Умеренность: равновесие и исцеление. Вы найдёте золотую середину.",
+    15: "Исход — Дьявол: вы освободитесь от того, что держало вас — если осмелитесь признать цепи.",
+    16: "Исход — Башня: внезапное освобождение через разрушение. Не держитесь за то, что падает.",
+    17: "Исход — Звезда: надежда оправдается. Путь к исцелению и обновлению открыт.",
+    18: "Исход — Луна: путь будет нелинейным, но интуиция приведёт вас туда, где нужно быть.",
+    19: "Исход — Солнце: ясность, радость и успех. Свет побеждает.",
+    20: "Исход — Суд: обновление и призыв к высшей версии себя. Вы ответите на него.",
+    21: "Исход — Мир: завершение цикла и интеграция. Вы придёте к целостности.",
+  }
+};
+
+// ═══════════════════════════════════════════
+// APP STATE
+// ═══════════════════════════════════════════
+let state = {
+  name: '', birthDate: null, question: '',
+  lifePathNumber: 0, birthYear: 0, birthMonth: 0, birthDay: 0,
+  cards: [],
+  flippedCount: 0
+};
+
+// ─── READING COUNTER ───
+const DAILY_FREE_LIMIT = 2;
+
+function getTodayKey() {
+  return 'tarot_count_' + new Date().toISOString().slice(0,10);
+}
+function getReadingCount() {
+  return parseInt(localStorage.getItem(getTodayKey()) || '0');
+}
+function incrementReadingCount() {
+  const key = getTodayKey();
+  localStorage.setItem(key, (getReadingCount() + 1).toString());
+}
+function isLimitReached() {
+  return getReadingCount() >= DAILY_FREE_LIMIT;
+}
+
+// ─── MODAL FUNCTIONS ───
+function openLimitModal() {
+  document.getElementById('modal-limit').classList.add('open');
+  startCountdown();
+}
+function closeLimitModal() {
+  document.getElementById('modal-limit').classList.remove('open');
+}
+function openPremium() {
+  closeLimitModal();
+  document.getElementById('modal-premium').classList.add('open');
+}
+function closePremium() {
+  document.getElementById('modal-premium').classList.remove('open');
+}
+function selectPlan(plan) {
+  document.getElementById('plan-month').classList.toggle('selected', plan === 'month');
+  document.getElementById('plan-year').classList.toggle('selected', plan === 'year');
+}
+function handleSubscribe() {
+  // Placeholder — здесь подключается платёжная система
+  alert('Здесь будет интеграция с платёжной системой');
+}
+
+let countdownInterval = null;
+function startCountdown() {
+  if (countdownInterval) clearInterval(countdownInterval);
+  function update() {
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0);
+    const diff = midnight - now;
+    const h = String(Math.floor(diff / 3600000)).padStart(2,'0');
+    const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2,'0');
+    const s = String(Math.floor((diff % 60000) / 1000)).padStart(2,'0');
+    const el = document.getElementById('limit-countdown');
+    if (el) el.textContent = `Следующее бесплатное гадание через: ${h}:${m}:${s}`;
+  }
+  update();
+  countdownInterval = setInterval(update, 1000);
+}
+
+function calcLifePath(dateStr) {
+  const digits = dateStr.replace(/-/g, '').split('').map(Number);
+  let sum = digits.reduce((a, b) => a + b, 0);
+  while (sum > 21) sum = String(sum).split('').map(Number).reduce((a,b)=>a+b,0);
+  return sum;
+}
+
+function seededRandom(seed) {
+  let s = seed;
+  return function() {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    return (s >>> 0) / 4294967296;
+  };
+}
+
+function selectCards(birthDate) {
+  const [year, month, day] = birthDate.split('-').map(Number);
+  state.birthYear = year; state.birthMonth = month; state.birthDay = day;
+  state.lifePathNumber = calcLifePath(birthDate);
+
+  // Seed based on birth date for deterministic but personal selection
+  const seed = year * 10000 + month * 100 + day + state.lifePathNumber;
+  const rng = seededRandom(seed + Date.now() % 1000); // Add time for variety
+
+  const pool = [...MAJOR_ARCANA];
+  const selected = [];
+  for (let i = 0; i < 5; i++) {
+    const idx = Math.floor(rng() * pool.length);
+    selected.push(pool.splice(idx, 1)[0]);
+  }
+  return selected.map((card, i) => ({ ...card, position: POSITIONS[i] }));
+}
+
+// ═══════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startReading() {
+  const name = document.getElementById('inp-name').value.trim();
+  const birth = document.getElementById('inp-birth').value;
+  const question = document.getElementById('inp-question').value.trim();
+
+  if (!name || !birth) {
+    document.getElementById('inp-name').style.borderColor = name ? '' : '#c0403a';
+    document.getElementById('inp-birth').style.borderColor = birth ? '' : '#c0403a';
+    return;
+  }
+
+  // Check daily limit
+  if (isLimitReached()) {
+    openLimitModal();
+    return;
+  }
+
+  state.name = name;
+  state.birthDate = birth;
+  state.question = question;
+  state.cards = selectCards(birth);
+  state.flippedCount = 0;
+
+  showScreen('screen-orb');
+  animateOrb();
+}
+
+const ORB_PHRASES = [
+  "Нити судьбы сплетаются в узор...",
+  "Архетипы пробуждаются...",
+  "Ваша энергия считывается...",
+  "Карты слышат вас...",
+  "Послание обретает форму...",
+];
+
+function animateOrb() {
+  const el = document.getElementById('orb-text');
+  let i = 0;
+  const iv = setInterval(() => {
+    el.style.opacity = 0;
+    setTimeout(() => {
+      el.textContent = ORB_PHRASES[i % ORB_PHRASES.length];
+      el.style.opacity = 1;
+      i++;
+    }, 400);
+  }, 1400);
+
+  setTimeout(() => {
+    clearInterval(iv);
+    buildCardsScreen();
+    showScreen('screen-cards');
+  }, 7000);
+}
+
+// ─── SVG CARD BACK ───
+function svgCardBack() {
+  return `<svg viewBox="0 0 120 200" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="bgGrad" cx="50%" cy="50%" r="70%">
+        <stop offset="0%" stop-color="#2a1060"/>
+        <stop offset="60%" stop-color="#150830"/>
+        <stop offset="100%" stop-color="#0a0520"/>
+      </radialGradient>
+      <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#c9a84c" stop-opacity="0.25"/>
+        <stop offset="100%" stop-color="#c9a84c" stop-opacity="0"/>
+      </radialGradient>
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="1.5" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+
+    <!-- Background -->
+    <rect width="120" height="200" rx="6" fill="url(#bgGrad)"/>
+    
+    <!-- Center glow -->
+    <ellipse cx="60" cy="100" rx="55" ry="80" fill="url(#centerGlow)"/>
+
+    <!-- Outer border frame -->
+    <rect x="5" y="5" width="110" height="190" rx="5" fill="none" stroke="#c9a84c" stroke-width="0.6" stroke-opacity="0.7"/>
+    <rect x="8" y="8" width="104" height="184" rx="4" fill="none" stroke="#c9a84c" stroke-width="0.3" stroke-opacity="0.3"/>
+
+    <!-- Corner ornaments -->
+    <g fill="none" stroke="#c9a84c" stroke-width="0.5" stroke-opacity="0.8" filter="url(#glow)">
+      <!-- TL -->
+      <path d="M10,10 L10,22 M10,10 L22,10"/>
+      <path d="M13,13 L13,20 M13,13 L20,13"/>
+      <circle cx="10" cy="10" r="2" fill="#c9a84c" fill-opacity="0.6"/>
+      <!-- TR -->
+      <path d="M110,10 L110,22 M110,10 L98,10"/>
+      <path d="M107,13 L107,20 M107,13 L100,13"/>
+      <circle cx="110" cy="10" r="2" fill="#c9a84c" fill-opacity="0.6"/>
+      <!-- BL -->
+      <path d="M10,190 L10,178 M10,190 L22,190"/>
+      <path d="M13,187 L13,180 M13,187 L20,187"/>
+      <circle cx="10" cy="190" r="2" fill="#c9a84c" fill-opacity="0.6"/>
+      <!-- BR -->
+      <path d="M110,190 L110,178 M110,190 L98,190"/>
+      <path d="M107,187 L107,180 M107,187 L100,187"/>
+      <circle cx="110" cy="190" r="2" fill="#c9a84c" fill-opacity="0.6"/>
+    </g>
+
+    <!-- Moon phases top -->
+    <g fill="#c9a84c" fill-opacity="0.5" transform="translate(60,22)">
+      <circle cx="-24" cy="0" r="3.5"/>
+      <path d="M-17,0 a5,5 0 0,1 0,-5 a4,4 0 0,0 0,10 a5,5 0 0,1 0,-5z" fill="#c9a84c" fill-opacity="0.4"/>
+      <circle cx="-9" cy="0" r="4.5"/>
+      <circle cx="0" cy="0" r="5.5"/>
+      <circle cx="9" cy="0" r="4.5"/>
+      <path d="M17,0 a5,5 0 0,0 0,-5 a4,4 0 0,1 0,10 a5,5 0 0,0 0,-5z" fill="#c9a84c" fill-opacity="0.4"/>
+      <circle cx="24" cy="0" r="3.5"/>
+    </g>
+
+    <!-- Central all-seeing eye -->
+    <g transform="translate(60,95)" filter="url(#glow)">
+      <!-- Outer hexagon -->
+      <polygon points="0,-30 26,-15 26,15 0,30 -26,15 -26,-15" 
+               fill="none" stroke="#c9a84c" stroke-width="0.7" stroke-opacity="0.6"/>
+      <!-- Inner hexagon rotated -->
+      <polygon points="0,-22 19,-11 19,11 0,22 -19,11 -19,-11" 
+               fill="none" stroke="#c9a84c" stroke-width="0.5" stroke-opacity="0.4"/>
+      <!-- Wings -->
+      <path d="M-26,-8 Q-38,-4 -42,4 Q-36,2 -26,8" fill="none" stroke="#c9a84c" stroke-width="0.6" stroke-opacity="0.5"/>
+      <path d="M-28,-4 Q-34,-1 -36,4 Q-32,2 -28,6" fill="none" stroke="#c9a84c" stroke-width="0.4" stroke-opacity="0.4"/>
+      <path d="M26,-8 Q38,-4 42,4 Q36,2 26,8" fill="none" stroke="#c9a84c" stroke-width="0.6" stroke-opacity="0.5"/>
+      <path d="M28,-4 Q34,-1 36,4 Q32,2 28,6" fill="none" stroke="#c9a84c" stroke-width="0.4" stroke-opacity="0.4"/>
+      <!-- Eye shape -->
+      <path d="M-14,0 Q0,-12 14,0 Q0,12 -14,0z" fill="none" stroke="#c9a84c" stroke-width="1" stroke-opacity="0.9"/>
+      <!-- Iris -->
+      <circle cx="0" cy="0" r="7" fill="none" stroke="#c9a84c" stroke-width="0.7" stroke-opacity="0.8"/>
+      <circle cx="0" cy="0" r="4" fill="#c9a84c" fill-opacity="0.15"/>
+      <!-- Pupil -->
+      <circle cx="0" cy="0" r="2" fill="#c9a84c" fill-opacity="0.7"/>
+      <!-- Eyelashes rays -->
+      <line x1="0" y1="-12" x2="0" y2="-18" stroke="#c9a84c" stroke-width="0.5" stroke-opacity="0.4"/>
+      <line x1="0" y1="12" x2="0" y2="18" stroke="#c9a84c" stroke-width="0.5" stroke-opacity="0.4"/>
+      <line x1="-10" y1="-7" x2="-14" y2="-10" stroke="#c9a84c" stroke-width="0.5" stroke-opacity="0.3"/>
+      <line x1="10" y1="-7" x2="14" y2="-10" stroke="#c9a84c" stroke-width="0.5" stroke-opacity="0.3"/>
+    </g>
+
+    <!-- Star constellation dots -->
+    <g fill="#c9a84c" fill-opacity="0.4">
+      <circle cx="18" cy="50" r="1.2"/>
+      <circle cx="25" cy="44" r="0.8"/>
+      <circle cx="32" cy="48" r="1"/>
+      <circle cx="22" cy="58" r="0.8"/>
+      <line x1="18" y1="50" x2="25" y2="44" stroke="#c9a84c" stroke-width="0.3" stroke-opacity="0.3"/>
+      <line x1="25" y1="44" x2="32" y2="48" stroke="#c9a84c" stroke-width="0.3" stroke-opacity="0.3"/>
+      <circle cx="88" cy="50" r="1.2"/>
+      <circle cx="95" cy="44" r="0.8"/>
+      <circle cx="102" cy="48" r="1"/>
+      <line x1="88" y1="50" x2="95" y2="44" stroke="#c9a84c" stroke-width="0.3" stroke-opacity="0.3"/>
+      <line x1="95" y1="44" x2="102" y2="48" stroke="#c9a84c" stroke-width="0.3" stroke-opacity="0.3"/>
+      <circle cx="18" cy="145" r="1.2"/>
+      <circle cx="25" cy="152" r="0.8"/>
+      <circle cx="32" cy="148" r="1"/>
+      <line x1="18" y1="145" x2="25" y2="152" stroke="#c9a84c" stroke-width="0.3" stroke-opacity="0.3"/>
+      <line x1="25" y1="152" x2="32" y2="148" stroke="#c9a84c" stroke-width="0.3" stroke-opacity="0.3"/>
+      <circle cx="88" cy="145" r="1.2"/>
+      <circle cx="95" cy="152" r="0.8"/>
+      <circle cx="102" cy="148" r="1"/>
+      <line x1="88" y1="145" x2="95" y2="152" stroke="#c9a84c" stroke-width="0.3" stroke-opacity="0.3"/>
+      <line x1="95" y1="152" x2="102" y2="148" stroke="#c9a84c" stroke-width="0.3" stroke-opacity="0.3"/>
+    </g>
+
+    <!-- Moon phases bottom (inverted) -->
+    <g fill="#c9a84c" fill-opacity="0.5" transform="translate(60,178) scale(1,-1)">
+      <circle cx="-24" cy="0" r="3.5"/>
+      <circle cx="-9" cy="0" r="4.5"/>
+      <circle cx="0" cy="0" r="5.5"/>
+      <circle cx="9" cy="0" r="4.5"/>
+      <circle cx="24" cy="0" r="3.5"/>
+    </g>
+
+    <!-- Thin decorative lines -->
+    <line x1="14" y1="36" x2="106" y2="36" stroke="#c9a84c" stroke-width="0.3" stroke-opacity="0.25"/>
+    <line x1="14" y1="164" x2="106" y2="164" stroke="#c9a84c" stroke-width="0.3" stroke-opacity="0.25"/>
+
+    <!-- Four tiny stars in center field -->
+    <g fill="#c9a84c" fill-opacity="0.3">
+      <text x="20" y="105" font-size="6" text-anchor="middle">✦</text>
+      <text x="100" y="105" font-size="6" text-anchor="middle">✦</text>
+    </g>
+  </svg>`;
+}
+
+// ─── SVG CARD FACE ───
+const CARD_COLORS = [
+  ['#3a1060','#7020c0'],['#102040','#2060c0'],['#401010','#c03030'],
+  ['#103020','#20a060'],['#2a0a50','#8030b0'],['#1a1a00','#a09020'],
+  ['#002030','#0080a0'],['#300a10','#a02040'],['#0a2010','#30a050'],
+  ['#2a1800','#a06020'],['#200030','#8000c0'],['#002020','#00a080'],
+  ['#301010','#c04040'],['#101030','#4040c0'],['#0a2808','#28a030'],
+  ['#301830','#804080'],['#102030','#2060a0'],['#001820','#006080'],
+  ['#201010','#802020'],['#302000','#c08000'],['#002018','#008060'],
+  ['#180830','#6030a0'],
+];
+
+function svgCardFace(card) {
+  const [dark, accent] = CARD_COLORS[card.id % CARD_COLORS.length];
+  const sym = card.symbol;
+  return `<svg viewBox="0 0 120 175" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="fg${card.id}" cx="50%" cy="40%" r="70%">
+        <stop offset="0%" stop-color="${accent}" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="${dark}" stop-opacity="1"/>
+      </radialGradient>
+      <radialGradient id="centerFg${card.id}" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="${accent}" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="${accent}" stop-opacity="0"/>
+      </radialGradient>
+      <filter id="fglow${card.id}">
+        <feGaussianBlur stdDeviation="2" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+
+    <!-- BG -->
+    <rect width="120" height="175" fill="url(#fg${card.id})"/>
+    <ellipse cx="60" cy="80" rx="50" ry="70" fill="url(#centerFg${card.id})"/>
+
+    <!-- Border -->
+    <rect x="4" y="4" width="112" height="167" rx="4" fill="none" stroke="#c9a84c" stroke-width="0.8" stroke-opacity="0.8"/>
+    <rect x="7" y="7" width="106" height="161" rx="3" fill="none" stroke="#c9a84c" stroke-width="0.3" stroke-opacity="0.3"/>
+
+    <!-- Corner diamond ornaments -->
+    <g fill="#c9a84c" fill-opacity="0.7" filter="url(#fglow${card.id})">
+      <polygon points="10,10 13,13 10,16 7,13" />
+      <polygon points="110,10 113,13 110,16 107,13" />
+      <polygon points="10,165 13,162 10,159 7,162" />
+      <polygon points="110,165 113,162 110,159 107,162" />
+    </g>
+
+    <!-- Top arc decoration -->
+    <path d="M30,18 Q60,10 90,18" fill="none" stroke="#c9a84c" stroke-width="0.6" stroke-opacity="0.5"/>
+    <circle cx="60" cy="14" r="2" fill="#c9a84c" fill-opacity="0.6"/>
+    <circle cx="30" cy="18" r="1.2" fill="#c9a84c" fill-opacity="0.4"/>
+    <circle cx="90" cy="18" r="1.2" fill="#c9a84c" fill-opacity="0.4"/>
+
+    <!-- Outer circle frame for symbol -->
+    <circle cx="60" cy="82" r="36" fill="none" stroke="#c9a84c" stroke-width="0.6" stroke-opacity="0.4"/>
+    <circle cx="60" cy="82" r="30" fill="none" stroke="#c9a84c" stroke-width="0.4" stroke-opacity="0.25"/>
+    
+    <!-- 8-point star ring marks -->
+    <g fill="#c9a84c" fill-opacity="0.35">
+      <circle cx="60" cy="46" r="1.5"/>
+      <circle cx="60" cy="118" r="1.5"/>
+      <circle cx="24" cy="82" r="1.5"/>
+      <circle cx="96" cy="82" r="1.5"/>
+      <circle cx="34.5" cy="56.5" r="1"/>
+      <circle cx="85.5" cy="56.5" r="1"/>
+      <circle cx="34.5" cy="107.5" r="1"/>
+      <circle cx="85.5" cy="107.5" r="1"/>
+    </g>
+
+    <!-- Mandala petals -->
+    <g fill="none" stroke="#c9a84c" stroke-width="0.4" stroke-opacity="0.2">
+      <ellipse cx="60" cy="82" rx="14" ry="28" transform="rotate(0,60,82)"/>
+      <ellipse cx="60" cy="82" rx="14" ry="28" transform="rotate(45,60,82)"/>
+      <ellipse cx="60" cy="82" rx="14" ry="28" transform="rotate(90,60,82)"/>
+      <ellipse cx="60" cy="82" rx="14" ry="28" transform="rotate(135,60,82)"/>
+    </g>
+
+    <!-- Inner glow circle -->
+    <circle cx="60" cy="82" r="20" fill="${accent}" fill-opacity="0.08"/>
+
+    <!-- Central symbol -->
+    <text x="60" y="92" 
+          font-size="28" text-anchor="middle" dominant-baseline="middle"
+          fill="#c9a84c" 
+          filter="url(#fglow${card.id})"
+          font-family="serif">${sym}</text>
+
+    <!-- Roman numeral (card id) -->
+    <text x="60" y="130" font-size="7" text-anchor="middle" 
+          fill="#c9a84c" fill-opacity="0.5" 
+          font-family="'Cinzel',serif" letter-spacing="1">${toRoman(card.id)}</text>
+
+    <!-- Bottom arc decoration -->
+    <path d="M30,157 Q60,165 90,157" fill="none" stroke="#c9a84c" stroke-width="0.6" stroke-opacity="0.5"/>
+    <circle cx="60" cy="161" r="2" fill="#c9a84c" fill-opacity="0.6"/>
+
+    <!-- Side glyphs -->
+    <text x="14" y="86" font-size="8" text-anchor="middle" fill="#c9a84c" fill-opacity="0.25" font-family="serif">☽</text>
+    <text x="106" y="86" font-size="8" text-anchor="middle" fill="#c9a84c" fill-opacity="0.25" font-family="serif">☾</text>
+    
+    <!-- Tiny stars scatter -->
+    <g fill="#c9a84c" fill-opacity="0.2" font-size="4" font-family="serif">
+      <text x="20" y="50">✦</text><text x="92" y="50">✦</text>
+      <text x="16" y="120">✦</text><text x="97" y="120">✦</text>
+    </g>
+  </svg>`;
+}
+
+function toRoman(n) {
+  if (n === 0) return '⓪';
+  const vals = [10,9,5,4,1];
+  const syms = ['X','IX','V','IV','I'];
+  let r = '';
+  for(let i=0;i<vals.length;i++) while(n>=vals[i]){r+=syms[i];n-=vals[i];}
+  return r;
+}
+
+function buildCardsScreen() {
+  const name = state.name.split(' ')[0];
+  document.getElementById('oracle-phrase').textContent =
+    `«Я вижу... Энергия вокруг вашего вопроса становится яснее, ${name}...»`;
+
+  const row = document.getElementById('cards-row');
+  row.innerHTML = '';
+  state.cards.forEach((card, i) => {
+    const slot = document.createElement('div');
+    slot.className = 'card-slot';
+    slot.style.animationDelay = `${i * 0.4}s`;
+    slot.dataset.index = i;
+    slot.innerHTML = `
+      <div class="card-inner">
+        <div class="card-back">${svgCardBack()}</div>
+        <div class="card-face">
+          ${svgCardFace(card)}
+          <div class="card-face-name">${card.name}</div>
+        </div>
+      </div>
+      <div class="card-position-label">${card.position.label}</div>`;
+    slot.addEventListener('click', () => flipCard(slot, i));
+    row.appendChild(slot);
+  });
+}
+
+function flipCard(slot, index) {
+  if (slot.classList.contains('flipped')) return;
+  slot.classList.add('flipped');
+  state.flippedCount++;
+  if (state.flippedCount === 5) {
+    const btn = document.getElementById('btn-reveal');
+    btn.style.opacity = '1';
+    btn.style.pointerEvents = 'all';
+    document.getElementById('flip-hint').textContent = 'Все карты открыты — вы готовы услышать предсказание';
+  }
+}
+
+function getZodiacSign(month, day) {
+  const signs = [
+    [1,20,'Козерог'],[2,19,'Водолей'],[3,20,'Рыбы'],[4,20,'Овен'],
+    [5,21,'Телец'],[6,21,'Близнецы'],[7,22,'Рак'],[8,22,'Лев'],
+    [9,23,'Дева'],[10,23,'Весы'],[11,22,'Скорпион'],[12,22,'Стрелец'],[13,0,'Козерог']
+  ];
+  for (const [m, d, name] of signs) {
+    if (month < m || (month === m && day <= d)) return name;
+  }
+  return 'Козерог';
+}
+
+// ─── SKELETON READING SCREEN ───
+function buildReadingSkeleton() {
+  const container = document.getElementById('reading-container');
+  const zodiac = getZodiacSign(state.birthMonth, state.birthDay);
+  const [y, m, d] = state.birthDate.split('-');
+
+  let html = `
+    <div class="reading-header">
+      <div class="reading-title">Предсказание для ${state.name}</div>
+      <div class="reading-date-info">
+        Дата рождения: ${d}.${m}.${y} · Знак: ${zodiac} · Число судьбы: ${state.lifePathNumber}
+        ${state.question ? `<br><em>«${state.question}»</em>` : ''}
+      </div>
+    </div>`;
+
+  state.cards.forEach((card, i) => {
+    html += `
+      <div class="card-reading" id="card-reading-${i}">
+        <div class="card-reading-header">
+          <div class="card-reading-symbol">${card.symbol}</div>
+          <div class="card-reading-meta">
+            <div class="card-reading-position">${card.position.label} — ${card.position.hint}</div>
+            <div class="card-reading-name">${card.name}</div>
+          </div>
+        </div>
+        <div class="card-reading-text" id="card-text-${i}">
+          <span class="oracle-typing">Оракул читает нити судьбы<span class="dots">...</span></span>
+        </div>
+      </div>
+      ${i < 4 ? '<div class="divider"></div>' : ''}`;
+  });
+
+  html += `
+    <div class="divider"></div>
+    <div class="final-message" id="final-synthesis">
+      <div class="oracle-typing">Сплетаю общую картину<span class="dots">...</span></div>
+    </div>
+    <button class="btn-gold btn-restart" id="btn-restart" style="opacity:0;pointer-events:none;margin-top:2rem;display:block;width:fit-content;margin-left:auto;margin-right:auto" onclick="restart()">НАЧАТЬ НОВОЕ ГАДАНИЕ</button>`;
+
+  container.innerHTML = html;
+}
+
+// ─── AI READING VIA CLAUDE API ───
+async function showReading() {
+  // Count this reading
+  incrementReadingCount();
+
+  showScreen('screen-reading');
+  buildReadingSkeleton();
+
+  // Animate skeletons in
+  setTimeout(() => {
+    document.querySelectorAll('.card-reading').forEach((el, i) => {
+      setTimeout(() => el.classList.add('visible'), i * 200);
+    });
+  }, 100);
+
+  const zodiac = getZodiacSign(state.birthMonth, state.birthDay);
+  const cardsDesc = state.cards.map((c, i) =>
+    `Карта ${i+1} — позиция "${c.position.label}" (${c.position.hint}): ${c.name} (${c.element})`
+  ).join('\n');
+
+  const userContext = `
+Имя: ${state.name}
+Дата рождения: ${state.birthDate} (знак зодиака: ${zodiac}, число судьбы: ${state.lifePathNumber})
+${state.question ? `Вопрос пользователя: «${state.question}»` : 'Вопрос не задан — общее гадание на текущий период жизни'}
+
+Выпавшие карты:
+${cardsDesc}`;
+
+  const systemPrompt = `Ты — мистический таролог-оракул. Говоришь на русском языке. Твой стиль: глубокий, поэтичный, эзотерический, но конкретный и личный. Ты не даёшь общих слов — каждое послание напрямую связано с вопросом человека и его картой.
+
+Правила:
+- Отвечай ТОЛЬКО валидным JSON без markdown-блоков, без лишнего текста
+- Каждое толкование карты должно прямо отвечать на вопрос пользователя через призму позиции карты
+- Используй имя человека 1-2 раза в тексте
+- Длина каждого толкования: 3-5 предложений, живых и образных
+- В синтезе: 4-6 предложений, объедини все карты в единый ответ на вопрос
+- Не используй клише типа "карты говорят", "энергия указывает" — говори прямо и образно`;
+
+  const userPrompt = `${userContext}
+
+Верни JSON следующей структуры:
+{
+  "cards": [
+    {"index": 0, "reading": "...толкование карты 1 через призму вопроса..."},
+    {"index": 1, "reading": "..."},
+    {"index": 2, "reading": "..."},
+    {"index": 3, "reading": "..."},
+    {"index": 4, "reading": "..."}
+  ],
+  "synthesis": "...общий ответ на вопрос, соединяющий все 5 карт в единое послание..."
+}`;
+
+  try {
+    const response = await fetch('/api/tarot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system: systemPrompt, userPrompt })
+    });
+
+    const data = await response.json();
+    const rawText = data.content?.map(b => b.text || '').join('');
+    const clean = rawText.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+
+    // Stream-type reveal: inject each card reading with typewriter effect
+    parsed.cards.forEach(({ index, reading }) => {
+      const el = document.getElementById(`card-text-${index}`);
+      if (el) typewriterReveal(el, reading, index * 400);
+    });
+
+    // Synthesis after all cards
+    setTimeout(() => {
+      const synEl = document.getElementById('final-synthesis');
+      if (synEl) {
+        synEl.innerHTML = '';
+        typewriterReveal(synEl, parsed.synthesis, 0, () => {
+          const btn = document.getElementById('btn-restart');
+          if (btn) { btn.style.opacity='1'; btn.style.pointerEvents='all'; }
+        });
+      }
+    }, parsed.cards.length * 400 + 1200);
+
+  } catch (err) {
+    console.error(err);
+    // Fallback to static readings
+    state.cards.forEach((card, i) => {
+      const el = document.getElementById(`card-text-${i}`);
+      const posKey = card.position.key;
+      const interp = BIRTH_ARCANA[posKey][card.id];
+      if (el) typewriterReveal(el, interp, i * 400);
+    });
+    setTimeout(() => {
+      const synEl = document.getElementById('final-synthesis');
+      if (synEl) synEl.innerHTML = `<p style="font-style:italic;color:var(--text-dim)">Нити вашей судьбы сплетены — карты открыли то, что скрыто. Доверьтесь посланию.</p>`;
+      const btn = document.getElementById('btn-restart');
+      if (btn) { btn.style.opacity='1'; btn.style.pointerEvents='all'; }
+    }, state.cards.length * 400 + 1200);
+  }
+}
+
+// Typewriter reveal with cursor
+function typewriterReveal(el, text, delay = 0, onDone = null) {
+  setTimeout(() => {
+    el.innerHTML = '';
+    const p = document.createElement('p');
+    p.style.fontStyle = 'italic';
+    el.appendChild(p);
+    let i = 0;
+    const cursor = document.createElement('span');
+    cursor.style.cssText = 'display:inline-block;width:2px;height:1em;background:#c9a84c;opacity:0.8;margin-left:1px;animation:blink 0.7s infinite;vertical-align:text-bottom';
+    p.appendChild(cursor);
+
+    const iv = setInterval(() => {
+      if (i < text.length) {
+        p.insertBefore(document.createTextNode(text[i]), cursor);
+        i++;
+      } else {
+        clearInterval(iv);
+        cursor.remove();
+        if (onDone) onDone();
+      }
+    }, 18);
+  }, delay);
+}
+
+function restart() {
+  state = { name:'', birthDate:null, question:'', lifePathNumber:0, birthYear:0, birthMonth:0, birthDay:0, cards:[], flippedCount:0 };
+  document.getElementById('inp-name').value = '';
+  document.getElementById('inp-birth').value = '';
+  document.getElementById('inp-question').value = '';
+  showScreen('screen-input');
+  // Show remaining count hint
+  const remaining = Math.max(0, DAILY_FREE_LIMIT - getReadingCount());
+  const sub = document.querySelector('.subtitle');
+  if (sub) {
+    if (remaining === 0) {
+      sub.textContent = 'Дневной лимит исчерпан · Оформите подписку для продолжения';
+      sub.style.color = 'var(--gold-dim)';
+    } else {
+      sub.textContent = `Таро откроет то, что скрыто за завесой времени · Осталось гаданий сегодня: ${remaining}`;
+      sub.style.color = '';
+    }
+  }
+}
+</script>
+</body>
+</html>

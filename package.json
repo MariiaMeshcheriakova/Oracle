@@ -1,0 +1,9 @@
+{
+  "name": "tarot-niti-sudby",
+  "version": "1.0.0",
+  "description": "Таро — Нити Судьбы",
+  "private": true,
+  "engines": {
+    "node": "18.x"
+  }
+}
